@@ -1,116 +1,97 @@
-// js/exercises/lunge.js
+// js/exercises/squat.js
 
-class Lunge {
+class SquatExercise {
     constructor() {
-        this.lunge_hold_start = 0;
-        this.is_holding = false;
+        this.name = '深蹲模式';
+        this.count = 0;
+        this.state = 'UP'; // 動作狀態機：'UP' (站立) 或 'DOWN' (蹲下)
+        
+        // 動作判定閥值 (Thresholds)
+        this.UP_THRESHOLD = 160;       // 膝蓋伸直角度 (大於此角度視為站立)
+        this.DOWN_THRESHOLD = 130;     // 膝蓋深蹲角度 (小於此角度視為進入深蹲)
+        this.TOO_LOW_THRESHOLD = 80;   // [修正] 膝蓋過低角度 (小於 70 度判定為蹲太低)
+        this.TORSO_LEAN_THRESHOLD = 45;// [修正] 軀幹前傾容許最大角度 (原為 35，放寬至 45 度)
     }
 
-    validate(lmList) {
-        let issues = [];
-        
-        // 取得左右腳節點
-        const l_leg = {hip: lmList[23], knee: lmList[25], ankle: lmList[27], heel: lmList[29], toe: lmList[31]};
-        const r_leg = {hip: lmList[24], knee: lmList[26], ankle: lmList[28], heel: lmList[30], toe: lmList[32]};
-        
-        // 計算雙膝角度
-        const l_knee_ang = MathUtils.getAngle(l_leg.hip, l_leg.knee, l_leg.ankle);
-        const r_knee_ang = MathUtils.getAngle(r_leg.hip, r_leg.knee, r_leg.ankle); 
-        
-        // 判斷前後腳 (膝蓋彎曲角度較小的為前腳)
-        let front_leg, back_leg, f_ang, b_ang;
-        if (l_knee_ang < r_knee_ang) {
-            front_leg = l_leg;
-            back_leg = r_leg;
-            f_ang = l_knee_ang;
-            b_ang = r_knee_ang;
-        } else {
-            front_leg = r_leg;
-            back_leg = l_leg;
-            f_ang = r_knee_ang;
-            b_ang = l_knee_ang;
-        }
-
-        // 姿勢幾何驗證
-        if (!(f_ang >= 80 && f_ang <= 130)) {
-            issues.push(new PoseIssue(`前膝彎曲未達90度 (${Math.floor(f_ang)}°)`, [front_leg.hip, front_leg.knee, front_leg.ankle]));
-        }
-            
-        if (b_ang < 130) {
-            issues.push(new PoseIssue(`後腳未打直 (${Math.floor(b_ang)}°)`, [back_leg.hip, back_leg.knee, back_leg.ankle]));
-        }
-
-        const back_foot_angle = MathUtils.getHorizontalAngle(back_leg.heel, back_leg.toe);
-        if (back_foot_angle > 50) {
-            issues.push(new PoseIssue("後腳跟浮起 (請貼地)", [back_leg.heel, back_leg.toe]));
-        }
-            
-        const shoulder = (front_leg === l_leg) ? lmList[11] : lmList[12];
-        const vertical_point = {x: front_leg.hip.x, y: front_leg.hip.y - 100};
-        const trunk_angle = MathUtils.getAngle(vertical_point, front_leg.hip, shoulder);
-        
-        if (trunk_angle > 40) {
-            issues.push(new PoseIssue(`上半身未直立 (${Math.floor(trunk_angle)}°)`, [shoulder, front_leg.hip]));
-        }
-            
-        return { isValid: issues.length === 0, issues: issues };
+    // 重置計數
+    reset() {
+        this.count = 0;
+        this.state = 'UP';
     }
 
-    getFrontKneeAngle(lmList) {
-        const l_knee_ang = MathUtils.getAngle(lmList[23], lmList[25], lmList[27]);
-        const r_knee_ang = MathUtils.getAngle(lmList[24], lmList[26], lmList[28]);
-        
-        const pts = (l_knee_ang < r_knee_ang) 
-            ? [lmList[23], lmList[25], lmList[27]] 
-            : [lmList[24], lmList[26], lmList[28]];
-            
-        return { front_knee_ang: Math.min(l_knee_ang, r_knee_ang), track_pts: pts };
-    }
+    // 處理每一幀的骨架資料
+    process(landmarks) {
+        // MediaPipe Pose 節點索引：左側 (11 肩膀, 23 髖, 25 膝, 27 踝)，右側 (12, 24, 26, 28)
+        // 實務上通常取左右兩側在 Z 軸上較靠近鏡頭的一側，這裡以左側為代表
+        const shoulder = landmarks[11];
+        const hip = landmarks[23];
+        const knee = landmarks[25];
+        const ankle = landmarks[27];
 
-    processFrame(lmList) {
-        // 封裝弓箭步的動作狀態機 (FSM) 與物理邊界啟動邏輯。
-        const { front_knee_ang, track_pts } = this.getFrontKneeAngle(lmList);
-        
-        const torso_h = Math.abs(
-            ((lmList[11].y + lmList[12].y) / 2) - ((lmList[23].y + lmList[24].y) / 2)
-        );
-        const ankle_dist_x = Math.abs(lmList[27].x - lmList[28].x);
+        // 確保關鍵節點都在畫面上，避免計算錯誤
+        if (!shoulder || !hip || !knee || !ankle) {
+            return {
+                modeText: `[自動切換] ${this.name}`,
+                count: this.count,
+                feedback: '請確保全身入鏡 (側對鏡頭)',
+                color: 'red'
+            };
+        }
 
-        // 確保上下限門檻在每一幀即時運算
-        const is_in_posture = (ankle_dist_x > torso_h * 0.6) && (front_knee_ang <= 140);
+        // --- 核心數學計算 (調用 MathUtils.js) ---
+        // 1. 膝蓋夾角 (髖關節 - 膝蓋 - 腳踝)
+        const kneeAngle = MathUtils.calculateAngle(hip, knee, ankle);
+        // 2. 軀幹與垂直線的夾角 (測量前傾程度)
+        const torsoAngle = MathUtils.calculateVerticalAngle(shoulder, hip);
 
-        let dashboard_info = "";
-        let feedback;
 
-        if (is_in_posture) {
-            const { isValid, issues } = this.validate(lmList);
-            
-            if (isValid) {
-                if (!this.is_holding) {
-                    this.is_holding = true;
-                    // 將 Python 的 time.time() 轉換為 JS 的秒數
-                    this.lunge_hold_start = Date.now() / 1000; 
-                }
+        // --- 錯誤姿勢偵測 ---
+        let feedback = '姿勢正確';
+        let color = 'green';
 
-                const elapsed = Math.floor((Date.now() / 1000) - this.lunge_hold_start);
-                
-                if (elapsed < 5) {
-                    dashboard_info = `維持中: ${elapsed} 秒`;
-                    feedback = new FeedbackState("姿勢完美！請繼續維持", UIState.GREEN);
-                } else {
-                    dashboard_info = "完成！請換邊";
-                    feedback = new FeedbackState("目標達成！", UIState.GREEN);
-                }
-            } else {
-                this.is_holding = false;
-                feedback = new FeedbackState(`❌ ${issues[0].msg}\n(請即時調整姿勢)`, UIState.YELLOW);
+        // [修正邏輯 1]：檢查軀幹是否過度前傾 (容錯率放寬至 45 度)
+        if (torsoAngle > this.TORSO_LEAN_THRESHOLD) {
+            feedback = `❌ 軀幹過度前傾 (${Math.round(torsoAngle)}°)\n(請即時調整姿勢)`;
+            color = 'red';
+        }
+        // [修正邏輯 2]：檢查是否蹲太低 (改用膝蓋夾角小於 70 度作為判定基準)
+        else if (kneeAngle < this.TOO_LOW_THRESHOLD) {
+            feedback = '❌ 蹲太低了！臀部不可低於膝蓋\n(請即時調整姿勢)';
+            color = 'red';
+        }
+
+
+        // --- 動作狀態機 (計算次數) ---
+        // 當處於站立狀態，且膝蓋角度小於深蹲閥值，且沒有蹲過低時，進入 DOWN 狀態
+        if (this.state === 'UP' && kneeAngle < this.DOWN_THRESHOLD && kneeAngle >= this.TOO_LOW_THRESHOLD) {
+            this.state = 'DOWN';
+            if (color === 'green') { // 只有姿勢正確時才給予鼓勵提示
+                feedback = '保持穩定...';
+                color = '#ffa500'; // 橘黃色
             }
-        } else {
-            this.is_holding = false;
-            dashboard_info = "請下蹲進入弓箭步";
-            feedback = new FeedbackState("準備開始... (請側對鏡頭)", UIState.RED);
+        }
+        
+        // 當處於深蹲狀態，且膝蓋角度恢復到站立閥值以上時，完成一次完整動作
+        if (this.state === 'DOWN' && kneeAngle > this.UP_THRESHOLD) {
+            this.state = 'UP';
+            
+            // 只有在沒有觸發紅字警告時，才計入成功次數
+            if (color !== 'red') {
+                this.count++;
+                feedback = '✅ 完美！完成一次';
+                color = '#00ff00';
+            }
         }
 
-        return { dashboard_info, feedback };
+        // 回傳處理結果，供 app.js 更新儀表板 UI
+        return {
+            modeText: `[自動切換] ${this.name}`,
+            count: this.count,
+            feedback: feedback,
+            color: color
+        };
     }
 }
+
+// 匯出物件供主程式使用
+window.squatExercise = new SquatExercise();
