@@ -1,6 +1,4 @@
-// js/exercises/squat.js
-
-class SquatExercise {
+class Squat {
     constructor() {
         this.name = '深蹲模式';
         this.count = 0;
@@ -21,8 +19,7 @@ class SquatExercise {
 
     // 處理每一幀的骨架資料
     process(landmarks) {
-        // MediaPipe Pose 節點索引：左側 (11 肩膀, 23 髖, 25 膝, 27 踝)，右側 (12, 24, 26, 28)
-        // 實務上通常取左右兩側在 Z 軸上較靠近鏡頭的一側，這裡以左側為代表
+        // MediaPipe Pose 節點索引：左側 (11 肩膀, 23 髖, 25 膝, 27 踝)
         const shoulder = landmarks[11];
         const hip = landmarks[23];
         const knee = landmarks[25];
@@ -38,44 +35,36 @@ class SquatExercise {
             };
         }
 
-        // --- 核心數學計算 (調用 MathUtils.js) ---
-        // 1. 膝蓋夾角 (髖關節 - 膝蓋 - 腳踝)
+        // --- 核心數學計算 ---
         const kneeAngle = MathUtils.calculateAngle(hip, knee, ankle);
-        // 2. 軀幹與垂直線的夾角 (測量前傾程度)
         const torsoAngle = MathUtils.calculateVerticalAngle(shoulder, hip);
-
 
         // --- 錯誤姿勢偵測 ---
         let feedback = '姿勢正確';
         let color = 'green';
 
-        // [修正邏輯 1]：檢查軀幹是否過度前傾 (容錯率放寬至 45 度)
+        // 檢查軀幹是否過度前傾
         if (torsoAngle > this.TORSO_LEAN_THRESHOLD) {
             feedback = `❌ 軀幹過度前傾 (${Math.round(torsoAngle)}°)\n(請即時調整姿勢)`;
             color = 'red';
         }
-        // [修正邏輯 2]：檢查是否蹲太低 (改用膝蓋夾角小於 70 度作為判定基準)
+        // 檢查是否蹲太低
         else if (kneeAngle < this.TOO_LOW_THRESHOLD) {
             feedback = '❌ 蹲太低了！臀部不可低於膝蓋\n(請即時調整姿勢)';
             color = 'red';
         }
 
-
         // --- 動作狀態機 (計算次數) ---
-        // 當處於站立狀態，且膝蓋角度小於深蹲閥值，且沒有蹲過低時，進入 DOWN 狀態
         if (this.state === 'UP' && kneeAngle < this.DOWN_THRESHOLD && kneeAngle >= this.TOO_LOW_THRESHOLD) {
             this.state = 'DOWN';
-            if (color === 'green') { // 只有姿勢正確時才給予鼓勵提示
+            if (color === 'green') {
                 feedback = '保持穩定...';
-                color = '#ffa500'; // 橘黃色
+                color = '#ffa500';
             }
         }
         
-        // 當處於深蹲狀態，且膝蓋角度恢復到站立閥值以上時，完成一次完整動作
         if (this.state === 'DOWN' && kneeAngle > this.UP_THRESHOLD) {
             this.state = 'UP';
-            
-            // 只有在沒有觸發紅字警告時，才計入成功次數
             if (color !== 'red') {
                 this.count++;
                 feedback = '✅ 完美！完成一次';
@@ -83,7 +72,6 @@ class SquatExercise {
             }
         }
 
-        // 回傳處理結果，供 app.js 更新儀表板 UI
         return {
             modeText: `[自動切換] ${this.name}`,
             count: this.count,
@@ -92,6 +80,3 @@ class SquatExercise {
         };
     }
 }
-
-// 匯出物件供主程式使用
-window.squatExercise = new SquatExercise();
