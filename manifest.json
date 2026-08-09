@@ -1,0 +1,16 @@
+{
+  "name": "Smart Fitness Mirror",
+  "short_name": "FitnessMirror",
+  "description": "基於 Edge AI 的智慧健身鏡，支援深蹲、弓箭步與棒式偵測。",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#ffa500",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2964/2964514.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "微軟正黑體", "Noto Sans TC", sans-serif;
+}
+
+body {
+    background-color: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    position: relative;
+    width: 1280px;
+    height: 720px;
+    max-width: 100%;
+    background-color: #000;
+}
+
+/* 影片與畫布重疊設定 */
+.input_video, .output_canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* 隱藏原始影片，我們只看 Canvas 上畫好骨架的結果 */
+.input_video {
+    display: none;
+}
+
+/* 儀表板 UI 樣式 */
+.dashboard {
+    position: absolute;
+    top: 40px;
+    left: 30px;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 20px 30px;
+    border-radius: 12px;
+    z-index: 10;
+}
+
+#mode_text { color: #ffa500; font-size: 24px; margin-bottom: 10px; }
+#info_text { color: #000; font-size: 32px; margin-bottom: 15px; }
+#feedback_text { font-size: 24px; font-weight: bold; }
+
+/* 狀態顏色 */
+.red { color: #ff0000; }
+.yellow { color: #cccc00; }
+.green { color: #00aa00; }

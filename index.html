@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Fitness Mirror</title>
+    
+    <!-- 加入 PWA 設定檔與主題顏色 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffa500">
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- 預先載入 MediaPipe Web 套件 -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 原始攝影機畫面 -->
+        <video id="input_video" class="input_video" autoplay playsinline></video>
+        <!-- 疊加在上方用來畫骨架與 UI 的畫布 -->
+        <canvas id="output_canvas" class="output_canvas" width="1280" height="720"></canvas>
+        
+        <!-- 左上角的儀表板 UI (取代 OpenCV 的 draw_dashboard_ui) -->
+        <div id="dashboard" class="dashboard">
+            <h2 id="mode_text">[自動切換] 深蹲模式</h2>
+            <h1 id="info_text">深蹲次數: 0</h1>
+            <h3 id="feedback_text" class="feedback red">準備開始... (請側對鏡頭)</h3>
+        </div>
+    </div>
+
+    <!-- 載入自定義邏輯腳本 (注意載入順序) -->
+    <script src="js/MathUtils.js"></script>
+    <script src="js/StateMachine.js"></script>
+    <script src="js/exercises/squat.js"></script>
+    <script src="js/exercises/lunge.js"></script>
+    <script src="js/exercises/plank.js"></script>
+    
+    <script src="js/app.js"></script>
+
+    <!-- 註冊 Service Worker 實現 PWA 離線快取與安裝功能 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker 註冊成功，範圍為: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker 註冊失敗: ', err);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
