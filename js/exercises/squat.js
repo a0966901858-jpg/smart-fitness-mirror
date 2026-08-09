@@ -17,8 +17,8 @@ class Squat {
         this.state = 'UP';
     }
 
-    // 處理每一幀的骨架資料
-    process(landmarks) {
+    // 將名稱從 process 改為 processFrame 以符合 app.js 的呼叫
+    processFrame(landmarks) {
         // MediaPipe Pose 節點索引：左側 (11 肩膀, 23 髖, 25 膝, 27 踝)
         const shoulder = landmarks[11];
         const hip = landmarks[23];
@@ -59,7 +59,7 @@ class Squat {
             this.state = 'DOWN';
             if (color === 'green') {
                 feedback = '保持穩定...';
-                color = '#ffa500';
+                color = '#ffa500'; // 橘黃色
             }
         }
         
@@ -68,7 +68,7 @@ class Squat {
             if (color !== 'red') {
                 this.count++;
                 feedback = '✅ 完美！完成一次';
-                color = '#00ff00';
+                color = '#00ff00'; // 亮綠色
             }
         }
 
