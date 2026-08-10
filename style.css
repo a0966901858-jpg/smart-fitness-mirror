@@ -5,30 +5,35 @@
     font-family: "微軟正黑體", "Noto Sans TC", sans-serif;
 }
 
+/* 1. 讓網頁本體填滿整個螢幕，不留白邊 */
 body {
-    background-color: #111;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    width: 100vw;
     height: 100vh;
-    overflow: hidden;
+    overflow: hidden; /* 防止出現滾動條 */
 }
 
+/* 2. 容器也是全螢幕大小 */
 .container {
     position: relative;
-    width: 1280px;
-    height: 720px;
-    max-width: 100%;
-    background-color: #000;
+    width: 100vw;
+    height: 100vh;
 }
 
-/* 影片與畫布重疊設定 */
+/* 3. 最關鍵的一步：讓畫布與影片無縫填滿 */
 .input_video, .output_canvas {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
+    /* object-fit: cover 會自動裁切兩側多餘的畫面，將核心影像放大填滿整個高度 */
+    object-fit: cover; 
+    
+    /* 如果需要鏡像翻轉可以解除下方註解 */
+    /* transform: scaleX(-1); */ 
 }
 
 /* 隱藏原始影片，我們只看 Canvas 上畫好骨架的結果 */
@@ -36,20 +41,34 @@ body {
     display: none;
 }
 
-/* 儀表板 UI 樣式 */
+/* 4. 確保你的儀表板浮在畫布最上層 */
 .dashboard {
     position: absolute;
-    top: 40px;
+    top: 30px;
     left: 30px;
-    background: rgba(255, 255, 255, 0.85);
-    padding: 20px 30px;
-    border-radius: 12px;
-    z-index: 10;
+    z-index: 10; /* 確保 UI 不會被畫布蓋住 */
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 15px;
 }
 
-#mode_text { color: #ffa500; font-size: 24px; margin-bottom: 10px; }
-#info_text { color: #000; font-size: 32px; margin-bottom: 15px; }
-#feedback_text { font-size: 24px; font-weight: bold; }
+/* === 保留的內部文字與顏色設定 === */
+#mode_text { 
+    color: #ffa500; 
+    font-size: 24px; 
+    margin-bottom: 10px; 
+}
+
+#info_text { 
+    color: #000; 
+    font-size: 32px; 
+    margin-bottom: 15px; 
+}
+
+#feedback_text { 
+    font-size: 24px; 
+    font-weight: bold; 
+}
 
 /* 狀態顏色 */
 .red { color: #ff0000; }
