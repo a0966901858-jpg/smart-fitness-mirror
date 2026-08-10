@@ -54,7 +54,7 @@ class Squat {
         
         // 【修正2】使用 Y 軸相對比例來判斷深度 (最不受攝影機仰角/俯角影響)
         // depth_ratio = (膝蓋Y - 臀部Y) / 軀幹長度
-        // 站立時：膝蓋在臀部下方很多，數值約為 1.5 ~ 2.0
+        // 站立時：膝蓋在臀部下方很多，數值約為 1.5 ~ 2.0 (因仰角壓縮，下修判斷基準)
         // 平行時：膝蓋與臀部同高，數值約為 0
         // 蹲太低：臀部低於膝蓋，數值為負數
         const depth_ratio = (knee_y - hip_y) / torso_h;
@@ -62,8 +62,12 @@ class Squat {
         // 物理邊界定義 
         const is_parallel = depth_ratio >= -0.15 && depth_ratio <= 0.25; 
         const is_too_deep = depth_ratio < -0.15;
-        const is_standing = depth_ratio > 1.2;
-        const is_down_phase = depth_ratio <= 1.2;
+        
+        // 【核心修正】調整站立與下蹲的臨界值，並創造「過渡區間」
+        // 放寬站立標準：因為仰角拍攝會壓縮腿部長度比例，將 1.2 降為 0.8
+        const is_standing = depth_ratio > 0.8;
+        // 延遲下蹲判定：設定為 0.5 以下，避免剛開始彎曲膝蓋就被嚴格檢視
+        const is_down_phase = depth_ratio <= 0.5;
 
         let dashboard_info = `深蹲次數: ${this.count}`;
         let feedback;
