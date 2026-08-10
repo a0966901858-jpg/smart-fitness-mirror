@@ -3,13 +3,17 @@
 class MathUtils {
     /**
      * 計算三點之間的夾角 (p2 為頂點)
-     * 加入長寬比校正，解決手機直向與電腦橫向的座標失真問題
+     * 核心修正：抓取相機真實的硬體解析度比例，不受 CSS 螢幕裁切影響
      */
     static getAngle(p1, p2, p3) {
-        // 動態抓取當前螢幕的長寬比 (例如手機通常是 0.56，電腦通常是 1.77)
-        const ratio = window.innerWidth / window.innerHeight;
+        // 抓取真實的影片原始長寬比，若尚未載入則預設為 16:9 (1.777)
+        const videoElement = document.getElementById('input_video');
+        let ratio = 1280 / 720; 
+        if (videoElement && videoElement.videoWidth && videoElement.videoHeight) {
+            ratio = videoElement.videoWidth / videoElement.videoHeight;
+        }
 
-        // 將 x 座標乘上比例尺，還原真實的物理幾何比例
+        // 將 x 座標乘上相機比例尺，還原真實的物理幾何比例
         const x1 = p1.x * ratio;
         const y1 = p1.y;
         const x2 = p2.x * ratio;
@@ -29,7 +33,11 @@ class MathUtils {
      * 計算兩點連線與水平線的夾角 (例如腳跟到腳尖)
      */
     static getHorizontalAngle(p1, p2) {
-        const ratio = window.innerWidth / window.innerHeight;
+        const videoElement = document.getElementById('input_video');
+        let ratio = 1280 / 720;
+        if (videoElement && videoElement.videoWidth && videoElement.videoHeight) {
+            ratio = videoElement.videoWidth / videoElement.videoHeight;
+        }
         
         const x1 = p1.x * ratio;
         const y1 = p1.y;
