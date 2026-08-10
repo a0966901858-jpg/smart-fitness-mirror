@@ -48,6 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     pose.onResults((results) => {
+        if (canvasElement.width !== results.image.width) {
+        canvasElement.width = results.image.width;
+        canvasElement.height = results.image.height;
+        }
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
