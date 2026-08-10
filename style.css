@@ -31,6 +31,7 @@ body {
     height: 100%;
     /* object-fit: cover 會自動裁切兩側多餘的畫面，將核心影像放大填滿整個高度 */
     object-fit: cover; 
+    transform: scaleX(-1);
     
     /* 如果需要鏡像翻轉可以解除下方註解 */
     /* transform: scaleX(-1); */ 
