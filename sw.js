@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fitness-mirror-v1';
+const CACHE_NAME = 'fitness-mirror-v2';
 
 // 定義需要快取到本地端的檔案清單
 const urlsToCache = [
