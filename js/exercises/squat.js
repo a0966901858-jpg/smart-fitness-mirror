@@ -29,7 +29,6 @@ class Squat {
             issues.push(new PoseIssue(`${leg.name}腳跟浮起`, [leg.heel, leg.toe]));
         }
 
-        // 修正 Y 軸參考點的數值，適應 normalized 座標
         const vertical_point = {x: leg.hip.x, y: leg.hip.y - 0.5};
         const trunk_angle = MathUtils.getAngle(vertical_point, leg.hip, leg.shoulder);
         if (trunk_angle > this.SQUAT_TRUNK_MAX_ANGLE) {
@@ -52,22 +51,20 @@ class Squat {
         let torso_h = Math.abs(leg.shoulder.y - leg.hip.y);
         torso_h = torso_h > 0 ? torso_h : 1.0; 
         
-        // 【修正2】使用 Y 軸相對比例來判斷深度 (最不受攝影機仰角/俯角影響)
-        // depth_ratio = (膝蓋Y - 臀部Y) / 軀幹長度
-        // 站立時：膝蓋在臀部下方很多，數值約為 1.5 ~ 2.0 (因仰角壓縮，下修判斷基準)
-        // 平行時：膝蓋與臀部同高，數值約為 0
-        // 蹲太低：臀部低於膝蓋，數值為負數
+        // 1. 計算膝蓋夾角 (用於判斷站立與下蹲的過渡狀態，不受腿長比例影響)
+        const knee_angle = MathUtils.getAngle(leg.hip, leg.knee, leg.ankle);
+        
+        // 2. 計算 Y 軸相對高度 (專門用於判斷深蹲到底部時的「平行深度」，最精準)
         const depth_ratio = (knee_y - hip_y) / torso_h;
         
-        // 物理邊界定義 
+        // 物理邊界定義：混搭判定
+        // 深度判定：看 Y 軸落差
         const is_parallel = depth_ratio >= -0.15 && depth_ratio <= 0.25; 
         const is_too_deep = depth_ratio < -0.15;
         
-        // 【核心修正】調整站立與下蹲的臨界值，並創造「過渡區間」
-        // 放寬站立標準：因為仰角拍攝會壓縮腿部長度比例，將 1.2 降為 0.8
-        const is_standing = depth_ratio > 0.8;
-        // 延遲下蹲判定：設定為 0.5 以下，避免剛開始彎曲膝蓋就被嚴格檢視
-        const is_down_phase = depth_ratio <= 0.5;
+        // 狀態判定：看膝蓋角度
+        const is_standing = knee_angle >= 150;     // 腳打直 (150~180度) 視為站立
+        const is_down_phase = knee_angle <= 110;   // 膝蓋明顯彎曲，進入深蹲評分區間
 
         let dashboard_info = `深蹲次數: ${this.count}`;
         let feedback;
@@ -85,12 +82,10 @@ class Squat {
             this.state = ExerciseState.DOWN;
             const { isValid, issues } = this.validateForm(leg);
 
-            // 【修正1】優先檢查姿勢正確性！只要姿勢錯誤，就不給綠燈，並撤銷完美深度狀態
             if (!isValid) {
                 feedback = new FeedbackState(`❌ ${issues[0].msg}\n(請即時調整姿勢)`, UIState.YELLOW);
                 this.hit_target_depth = false;
             } 
-            // 姿勢完全正確的情況下，才進行深度的判定
             else {
                 if (this.hit_target_depth) {
                     if (is_too_deep) {
@@ -109,6 +104,7 @@ class Squat {
                 }
             }
         } else {
+            // 介於 110度 ~ 150度 之間，就是單純的動作過渡區間
             feedback = new FeedbackState("動作進行中...", UIState.YELLOW);
         }
 
