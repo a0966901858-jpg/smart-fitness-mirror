@@ -44,8 +44,12 @@ class MathUtils {
         const x2 = p2.x * ratio;
         const y2 = p2.y;
 
-        const radians = Math.atan2(y2 - y1, x2 - x1);
-        let angle = Math.abs(radians * 180.0 / Math.PI);
-        return angle;
+        // 【關鍵修正】加上 Math.abs() 絕對值
+        // 這樣無論面向左邊或右邊，算出來的角度都會是銳角 (0 ~ 90度)
+        const dy = Math.abs(y2 - y1);
+        const dx = Math.abs(x2 - x1);
+
+        const radians = Math.atan2(dy, dx);
+        return radians * 180.0 / Math.PI;
     }
 }
