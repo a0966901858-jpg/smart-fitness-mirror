@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const modeText = document.getElementById('mode_text');
     const infoText = document.getElementById('info_text');
     const feedbackText = document.getElementById('feedback_text');
+    const fpsDisplay = document.getElementById('fps_display');   // 新增：FPS 顯示節點
+
+    let lastFrameTime = performance.now();   // 新增：FPS 計時起點
 
     // ==========================================
     // 狀態管理器與緩衝切換參數 (Debounce)
@@ -48,6 +51,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     pose.onResults((results) => {
+        // 新增：計算即時 FPS（量測 MediaPipe 兩次回傳結果之間的間隔，反映完整處理速度）
+        const now = performance.now();
+        const delta = now - lastFrameTime;
+        lastFrameTime = now;
+        if (delta > 0) {
+            const fps = 1000 / delta;
+            fpsDisplay.innerText = `FPS: ${fps.toFixed(1)}`;
+        }
+
         if (canvasElement.width !== results.image.width) {
         canvasElement.width = results.image.width;
         canvasElement.height = results.image.height;
