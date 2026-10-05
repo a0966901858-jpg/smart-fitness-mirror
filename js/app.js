@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fpsDisplay = document.getElementById('fps_display');   // 新增：FPS 顯示節點
 
     let lastFrameTime = performance.now();   // 新增：FPS 計時起點
-
+    let smoothedFps = 0;
     // ==========================================
     // 狀態管理器與緩衝切換參數 (Debounce)
     // ==========================================
