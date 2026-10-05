@@ -57,7 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
         lastFrameTime = now;
         if (delta > 0) {
             const fps = 1000 / delta;
-            fpsDisplay.innerText = `FPS: ${fps.toFixed(1)}`;
+        smoothedFps = smoothedFps ? smoothedFps * 0.9 + fps * 0.1 : fps;
+        fpsDisplay.innerText = `FPS: ${smoothedFps.toFixed(1)}`;
         }
 
         if (canvasElement.width !== results.image.width) {
